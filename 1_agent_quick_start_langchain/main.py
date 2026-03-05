@@ -25,7 +25,6 @@ def get_cordinates(city_name: str, country_code: str) -> str:
             return "No data found"
     
 
-
 @tool("find_weather", description="Find the weather using the user's input location (latitude and longitude)")
 def get_weather(latitude: str, longitude: str) -> str:
     """"Tool responsible to find the weather using the user's input location (latitude and longitude). This tool will be used to return the temperature, humidity, general weather and wind speed of the location, """
@@ -34,14 +33,31 @@ def get_weather(latitude: str, longitude: str) -> str:
     if response.status_code in (200,201):
         data = response.json()
         if data:
-            general_weather = data['weather'][0].description
+            general_weather = data['weather'][0]['description']
             temperature = data['main']['temp']
             humidity = data['main']['humidity']
             wind_speed = data['wind']['speed']
             return f"General Weather: {general_weather},\n Temperature: {temperature}°C,\n Humidity: {humidity}%,\n Wind Speed: {wind_speed} m/s"
-            
+         
+#model = ChatDeepSeek(model="deepseek-reasoner", temperature=0.7, extra_body={"thinking": {"enabled": False,"type":"disabled"}})   
+model = ChatDeepSeek(model="deepseek-chat", temperature=0.7)      
+   
+agent = create_agent(
+    model=model,
+    tools=[get_cordinates, get_weather],
+    system_prompt="You are a helpful assistant that can find the weather of any location in the world"
+)
             
 if __name__ == "__main__":
     print("Hello from langchain-agents!")
-
-    
+    result =agent.invoke(
+        {
+            "messages":
+            [
+                {"role":"user",
+                 "content":"What is the weather in Cairo, Egypt?"
+                }
+            ]
+        }
+    )
+    print(result['messages'][-1].content)
