@@ -4,6 +4,7 @@ from langchain.agents import create_agent
 from langchain.tools import tool
 from requests import get
 import os
+from pydantic import BaseModel, Field
 
 load_dotenv()
 weather_cordinates_api_key =  os.getenv("WEATHER_CORDINATES_API_KEY")
@@ -39,13 +40,24 @@ def get_weather(latitude: str, longitude: str) -> str:
             wind_speed = data['wind']['speed']
             return f"General Weather: {general_weather},\n Temperature: {temperature}°C,\n Humidity: {humidity}%,\n Wind Speed: {wind_speed} m/s"
          
-#model = ChatDeepSeek(model="deepseek-reasoner", temperature=0.7, extra_body={"thinking": {"enabled": False,"type":"disabled"}})   
+#model = ChatDeepSeek(model="deepseek-reasoner", temperature=0.7, extra_body={"thinking": {"enabled": False,"type":"disabled"}})    --Use to disable thinking mode
+
+
+#Structured output
+
+class WeatherOutput(BaseModel):
+    general_weather: str = Field(description="General weather description")
+    temperature: str = Field(description="Temperature in Celsius")
+    humidity: str = Field(description="Humidity porcentage")
+    wind_speed: str = Field(description="Wind speed in m/s")
+
 model = ChatDeepSeek(model="deepseek-chat", temperature=0.7)      
    
 agent = create_agent(
     model=model,
     tools=[get_cordinates, get_weather],
-    system_prompt="You are a helpful assistant that can find the weather of any location in the world"
+    system_prompt="You are a helpful assistant that can find the weather of any location in the world",
+    response_format=WeatherOutput
 )
             
 if __name__ == "__main__":
@@ -61,4 +73,5 @@ if __name__ == "__main__":
             ]
         }
     )
-    print(result['messages'][-1].content)
+    #print(result['messages'][-1].content) --> No structured output, only text response
+    print(result["structured_response"].model_dump_json(indent=4)) #--Structured output in JSON format
