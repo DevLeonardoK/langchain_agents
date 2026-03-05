@@ -50,12 +50,13 @@ agent = create_agent(
             
 if __name__ == "__main__":
     print("Hello from langchain-agents!")
+    user_input = input("Enter the city name and country code (e.g. London, UK): ")
     result =agent.invoke(
         {
             "messages":
             [
                 {"role":"user",
-                 "content":"What is the weather in Cairo, Egypt?"
+                 "content":f"What is the weather in {user_input} ?"
                 }
             ]
         }
