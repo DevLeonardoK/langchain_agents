@@ -23,3 +23,26 @@ def chatbot(state: State):
     response = model.invoke(state['messages'])
     return {'messages': [response]}
 
+
+#builder = pipeline langgraph
+
+builder = StateGraph(State)
+
+builder.add_node("chatbot", chatbot)
+builder.set_entry_point("chatbot")
+builder.add_edge("chatbot",END) #edge finalize the single node
+
+
+#Construct the checkpointer database (memory)
+checkpointer = InMemorySaver()
+
+#Compile the pipeline with memory
+graph = builder.compile(checkpointer=checkpointer)
+
+#configurable to search and to insert session id to agent invoke
+configurable = {
+                    "configurable": 
+                        {
+                            "thread_id":"1"
+                        }
+                }
