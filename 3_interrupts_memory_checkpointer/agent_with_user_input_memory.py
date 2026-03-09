@@ -1,4 +1,5 @@
 from langgraph.graph import add_messages, StateGraph, END
+from langgraph.prebuilt import ToolNode
 from typing import Annotated
 from typing_extensions import TypedDict, Annotated #Metadata#
 from dotenv import load_dotenv
@@ -26,7 +27,11 @@ def os_file_reader_tool():
     return files
 
 #LLM
-model = ChatDeepSeek(model='deepseek-chat', temperature=0, tool=os_file_reader_tool)
+model = ChatDeepSeek(model='deepseek-chat', temperature=0).bind_tools([os_file_reader_tool])
+
+#tool node
+tools =[os_file_reader_tool]
+tool_node = ToolNode(tools)
 
 #Chatbot node
 def chatbot(state: State):
@@ -34,13 +39,22 @@ def chatbot(state: State):
     return {'messages': [response]}
 
 
-
+#function to decide tool execution
+def should_tool_call(state: State):
+    last_message = state['messages'][-1]
+    if last_message.tools_call:
+        return "tools"
+    return END
+    
+    
+    
 #builder = pipeline langgraph
 
 builder = StateGraph(State)
 
 builder.add_node("chatbot", chatbot)
 builder.set_entry_point("chatbot")
+builder.
 builder.add_edge("chatbot",END) #edge finalize the single node
 
 
