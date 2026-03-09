@@ -61,12 +61,36 @@ def get_system_os_specs():
                 }
     return response
     
+#save file
+@tool("save_file_tool", description="Tool to save a file with specified name and extension")
+def save_file_tool(file_name: str, extension:str, content:str, path:str = "."):
+    """
+    Saves content to a file.
+    
+    Args:
+        filename: Name of the file (without extension)
+        extension: File extension (e.g. .txt, .py, .json)
+        content: Content to write to the file
+        path: Directory path where the file will be saved
+    """
+    
+    p = Path(path)
+    if p.parent.exists():
+        full_path = f"{p}/{file_name}{extension}"
+        path_file = Path(full_path)
+        path_file.write_text(content)
+        return {"tool_output":"File created"}
+    else:
+        return {"tool_output":"The path: {p.parent} does not exist, check !"}        
+        
+
+
 
 #LLM
-model = ChatDeepSeek(model='deepseek-chat', temperature=0).bind_tools([os_file_reader_tool,get_system_os_specs]) #Tool knowledge for the LLM, but it does not run tools
+model = ChatDeepSeek(model='deepseek-chat', temperature=0).bind_tools([os_file_reader_tool,get_system_os_specs,save_file_tool]) #Tool knowledge for the LLM, but it does not run tools
 
 #tool node
-tools =[os_file_reader_tool, get_system_os_specs]
+tools =[os_file_reader_tool, get_system_os_specs,save_file_tool]
 tool_node = ToolNode(tools) #tool execution (run)
 
 #Chatbot node
@@ -105,7 +129,7 @@ graph = builder.compile(checkpointer=checkpointer)
 configurable = {
                     "configurable": 
                         {
-                            "thread_id":"2"
+                            "thread_id":"3"
                         }
                 }
 
