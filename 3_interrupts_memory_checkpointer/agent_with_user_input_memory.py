@@ -7,6 +7,7 @@ from langgraph.checkpoint.memory import InMemorySaver #Memory RAM
 from langchain_deepseek import ChatDeepSeek
 from langchain.tools import tool
 import os
+from pathlib import Path
 
 
 
@@ -21,11 +22,17 @@ class State(TypedDict):
 
 
 #system file reader tool
-@tool("os_file_reader_tool", description="Tool for retrieving files from this directory")
-def os_file_reader_tool():
-    files = os.listdir("/home/devleonardo-ai/Documents/langchain_agents")
-    return files
 
+@tool("os_file_reader_tool", description="Tool for retrieving files from specified directory")
+def os_file_reader_tool(path:str = "."):
+    """Tool to list files in a specified directory"""
+    
+    path_wrapper = Path(path).iterdir()
+    
+    return [
+            f"Identification: {r.name}, is_file: {r.is_file()}, is_dir: {r.is_dir()}"
+            for r in path_wrapper
+        ]
 #LLM
 model = ChatDeepSeek(model='deepseek-chat', temperature=0).bind_tools([os_file_reader_tool]) #Tool knowledge for the LLM, but it does not run tools
 
@@ -42,7 +49,7 @@ def chatbot(state: State):
 #function to decide tool execution
 def should_tool_call(state: State):
     last_message = state['messages'][-1]
-    if last_message.tool_call:
+    if last_message.tool_calls:
         return "tools"
     return END
     
@@ -55,7 +62,7 @@ builder.add_node("chatbot", chatbot)
 builder.add_node("tools", tool_node)
 
 builder.set_entry_point("chatbot")
-builder.add_conditional_edges("chatbot", should_tool_call) #origin to destination
+builder.add_conditional_edges("chatbot", should_tool_call) #origin node to destination
 builder.add_edge("tools","chatbot") #fixed pipeline
 
 
@@ -65,11 +72,11 @@ checkpointer = InMemorySaver()
 #Compile the pipeline with memory
 graph = builder.compile(checkpointer=checkpointer)
 
-#configurable to search and to insert session id to agent invoke
+#configurable dict to set the session thread_id for the agent
 configurable = {
                     "configurable": 
                         {
-                            "thread_id":"1"
+                            "thread_id":"2"
                         }
                 }
 
