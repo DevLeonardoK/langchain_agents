@@ -8,6 +8,7 @@ from langchain_deepseek import ChatDeepSeek
 from langchain.tools import tool
 import os
 from pathlib import Path
+import platform
 
 
 
@@ -22,22 +23,50 @@ class State(TypedDict):
 
 
 #system file reader tool
-
 @tool("os_file_reader_tool", description="Tool for retrieving files from specified directory")
 def os_file_reader_tool(path:str = "."):
     """Tool to list files in a specified directory"""
     
-    path_wrapper = Path(path).iterdir()
+    path_wrapper = Path(path)
+    if path_wrapper.exists() != False:
+
+        return [
+                f"Identification: {r.name}, is_file: {r.is_file()}, is_dir: {r.is_dir()}"
+                for r in path_wrapper.iterdir()
+            ]
+    else:
+        return "This directory is not valid, check the path" 
+
+#get system os
+@tool("get_system_os_specs", description="Tool to get the system OS information: system (Linux/Windows/macOS), version, and architecture")
+def get_system_os_specs():
+    """
+    Returns detailed system OS information.
+
+    This tool helps an agent determine the appropriate nomenclature
+    for commands, paths, or navigation based on the host OS.
+
+    Returns:
+        dict: {
+            "system": "Windows/Linux/macOS",
+            "version": "OS version string",
+            "architecture": "x86_64, ARM, etc."
+        }
+    """
+    p = platform
+    response = {
+                "system": p.system(),
+                "version": p.version(),
+                "architecture": p.machine()
+                }
+    return response
     
-    return [
-            f"Identification: {r.name}, is_file: {r.is_file()}, is_dir: {r.is_dir()}"
-            for r in path_wrapper
-        ]
+
 #LLM
-model = ChatDeepSeek(model='deepseek-chat', temperature=0).bind_tools([os_file_reader_tool]) #Tool knowledge for the LLM, but it does not run tools
+model = ChatDeepSeek(model='deepseek-chat', temperature=0).bind_tools([os_file_reader_tool,get_system_os_specs]) #Tool knowledge for the LLM, but it does not run tools
 
 #tool node
-tools =[os_file_reader_tool]
+tools =[os_file_reader_tool, get_system_os_specs]
 tool_node = ToolNode(tools) #tool execution (run)
 
 #Chatbot node
