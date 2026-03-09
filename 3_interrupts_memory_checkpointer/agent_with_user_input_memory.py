@@ -27,11 +27,11 @@ def os_file_reader_tool():
     return files
 
 #LLM
-model = ChatDeepSeek(model='deepseek-chat', temperature=0).bind_tools([os_file_reader_tool])
+model = ChatDeepSeek(model='deepseek-chat', temperature=0).bind_tools([os_file_reader_tool]) #Tool knowledge for the LLM, but it does not run tools
 
 #tool node
 tools =[os_file_reader_tool]
-tool_node = ToolNode(tools)
+tool_node = ToolNode(tools) #tool execution (run)
 
 #Chatbot node
 def chatbot(state: State):
@@ -42,10 +42,9 @@ def chatbot(state: State):
 #function to decide tool execution
 def should_tool_call(state: State):
     last_message = state['messages'][-1]
-    if last_message.tools_call:
+    if last_message.tool_call:
         return "tools"
     return END
-    
     
     
 #builder = pipeline langgraph
@@ -53,9 +52,11 @@ def should_tool_call(state: State):
 builder = StateGraph(State)
 
 builder.add_node("chatbot", chatbot)
+builder.add_node("tools", tool_node)
+
 builder.set_entry_point("chatbot")
-builder.
-builder.add_edge("chatbot",END) #edge finalize the single node
+builder.add_conditional_edges("chatbot", should_tool_call) #origin to destination
+builder.add_edge("tools","chatbot") #fixed pipeline
 
 
 #Construct the checkpointer database (memory)
@@ -71,6 +72,7 @@ configurable = {
                             "thread_id":"1"
                         }
                 }
+
 
 if __name__ == "__main__":
     user_input = input('Type to agent -> ')
