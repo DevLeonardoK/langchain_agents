@@ -46,3 +46,21 @@ configurable = {
                             "thread_id":"1"
                         }
                 }
+
+if __name__ == "__main__":
+    user_input = input('Type to agent -> ')
+    result = []
+    while user_input.lower().strip() not in ['exit','sair']:
+        result.append(graph.invoke(
+            {
+              "messages":
+                [
+                  {
+                    "role":"user",
+                    "content":user_input
+                  }
+                ]  
+            }, config=configurable
+        ))
+        print(result[-1]['messages'][-1].content)
+        user_input = input('Type to agent -> ')
